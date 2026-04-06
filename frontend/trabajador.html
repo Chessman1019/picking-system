@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Trabajador - Picking</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="user-info">
+                <span>👤</span>
+                <span id="nombreTrabajador"></span>
+                <span id="dniTrabajador" class="dni-badge"></span>
+            </div>
+            <button onclick="cerrarSesion()" class="btn-logout">🚪 Salir</button>
+        </div>
+        
+        <!-- Tarjeta principal -->
+        <div class="card-picking">
+            <h2>📋 Registro de Picking</h2>
+            <p class="subtitle">Registra el inicio y fin de tu jornada de picking</p>
+            
+            <!-- Reloj -->
+            <div class="clock">
+                <div id="reloj" class="reloj">--:--:--</div>
+                <div id="fechaActual" class="fecha"></div>
+            </div>
+            
+            <!-- Estado actual -->
+            <div class="estado-picking">
+                <div class="estado-icono" id="estadoIcono">⏸️</div>
+                <div class="estado-texto">
+                    <h3 id="estadoTexto">No hay picking activo</h3>
+                    <p id="tiempoTranscurrido"></p>
+                </div>
+            </div>
+            
+            <!-- Botones de acción -->
+            <div class="botones-accion">
+                <button id="btnIniciar" onclick="iniciarPicking()" class="btn-iniciar">
+                    🟢 Iniciar Picking
+                </button>
+                <button id="btnFinalizar" onclick="finalizarPicking()" class="btn-finalizar" style="display: none;">
+                    🔴 Finalizar Picking
+                </button>
+            </div>
+            
+            <!-- Historial del día -->
+            <div class="historial">
+                <h3>📊 Resumen del día</h3>
+                <div class="resumen-dia">
+                    <div class="resumen-item">
+                        <span class="resumen-label">Total de hoy:</span>
+                        <span id="totalHoy" class="resumen-valor">0h 0min</span>
+                    </div>
+                    <div class="resumen-item">
+                        <span class="resumen-label">Último registro:</span>
+                        <span id="ultimoRegistro" class="resumen-valor">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/trabajador.js"></script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Administrador - Sistema Picking</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container-admin">
+        <!-- Header -->
+        <div class="header-admin">
+            <h1>📊 Panel de Control - Picking</h1>
+            <button onclick="cerrarSesion()" class="btn-logout">🚪 Cerrar Sesión</button>
+        </div>
+        
+        <!-- Filtros -->
+        <div class="filtros-card">
+            <h3>🔍 Filtros de búsqueda</h3>
+            <div class="filtros-grid">
+                <div class="filtro-grupo">
+                    <label>📅 Fecha</label>
+                    <input type="date" id="fecha" class="filtro-input">
+                </div>
+                <div class="filtro-grupo">
+                    <label>👤 Trabajador</label>
+                    <select id="trabajador" class="filtro-input">
+                        <option value="">Todos los trabajadores</option>
+                    </select>
+                </div>
+                <div class="filtro-grupo">
+                    <label>&nbsp;</label>
+                    <button onclick="cargarReportes()" class="btn-filtrar">🔍 Aplicar Filtros</button>
+                </div>
+                <div class="filtro-grupo">
+                    <label>&nbsp;</label>
+                    <button onclick="exportarExcel()" class="btn-exportar">📎 Exportar a Excel</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tarjetas de estadísticas -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-info">
+                    <h3>Trabajadores activos</h3>
+                    <p id="totalActivos" class="stat-number">0</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⏱️</div>
+                <div class="stat-info">
+                    <h3>Total horas</h3>
+                    <p id="totalHoras" class="stat-number">0h</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-info">
+                    <h3>Promedio por trabajador</h3>
+                    <p id="promedioHoras" class="stat-number">0h</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📝</div>
+                <div class="stat-info">
+                    <h3>Total registros</h3>
+                    <p id="totalRegistros" class="stat-number">0</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tabla de reportes -->
+        <div class="tabla-container">
+            <h3>📋 Registros de Picking</h3>
+            <div class="table-wrapper">
+                <table id="reportesTabla">
+                    <thead>
+                        <tr>
+                            <th>Trabajador</th>
+                            <th>DNI</th>
+                            <th>Fecha</th>
+                            <th>Hora Inicio</th>
+                            <th>Hora Fin</th>
+                            <th>Tiempo Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportesBody">
+                        <tr>
+                            <td colspan="6" class="text-center">Cargando datos...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/admin.js"></script>
+</body>
+</html>

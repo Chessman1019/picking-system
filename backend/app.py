@@ -21,28 +21,15 @@ def create_app():
             db.create_all()
             print("✅ Base de datos conectada")
 
-            # Crear usuario admin si no existe
+            # ⚠️ YA NO creamos usuarios automáticamente
+            # Los usuarios ya están cargados desde Aiven
             from models.usuario import Usuario
-
-            admin = Usuario.query.filter_by(dni='admin123').first()
-            if not admin:
-                admin_user = Usuario(
-                    dni='admin123',
-                    nombre='Administrador',
-                    rol='admin'
-                )
-
-                trabajador = Usuario(
-                    dni='12345678',
-                    nombre='Trabajador Demo',
-                    rol='trabajador'
-                )
-
-                db.session.add(admin_user)
-                db.session.add(trabajador)
-                db.session.commit()
-
-                print("✅ Usuarios de prueba creados")
+            
+            admin_exists = Usuario.query.filter_by(rol='admin').first()
+            if not admin_exists:
+                print("⚠️ No hay administrador en la BD. Agrega uno manualmente.")
+            else:
+                print(f"✅ Administrador encontrado: {admin_exists.nombre}")
 
         except Exception as e:
             print("❌ Error conectando a la BD:", e)

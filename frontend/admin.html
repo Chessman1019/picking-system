@@ -1,102 +1,109 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Administrador - Sistema Picking</title>
+    <title>PickFlow — Panel de Control</title>
     <link rel="stylesheet" href="css/styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
-    <div class="container-admin">
-        <!-- Header -->
-        <div class="header-admin">
-            <h1>📊 Panel de Control - Picking</h1>
-            <button onclick="cerrarSesion()" class="btn-logout">🚪 Cerrar Sesión</button>
-        </div>
-        
-        <!-- Filtros -->
-        <div class="filtros-card">
-            <h3>🔍 Filtros de búsqueda</h3>
-            <div class="filtros-grid">
-                <div class="filtro-grupo">
-                    <label>📅 Fecha</label>
+    <div class="admin-page">
+        <div class="page-wrapper-wide">
+
+            <!-- Top bar -->
+            <div class="admin-topbar">
+                <div class="admin-title">Panel de <span>Control</span></div>
+                <button onclick="cerrarSesion()" class="btn-logout-light">Cerrar sesión</button>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-row">
+                <div class="stat-tile">
+                    <div class="stat-tile-header">
+                        <div class="stat-tile-label">Activos ahora</div>
+                        <div class="stat-tile-icon" style="background:rgba(45,106,79,0.1);">👥</div>
+                    </div>
+                    <div id="totalActivos" class="stat-tile-num">0</div>
+                    <div class="stat-tile-sub">trabajadores en turno</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-tile-header">
+                        <div class="stat-tile-label">Total horas</div>
+                        <div class="stat-tile-icon" style="background:rgba(201,168,76,0.1);">⏱</div>
+                    </div>
+                    <div id="totalHoras" class="stat-tile-num">0h</div>
+                    <div class="stat-tile-sub">jornada de hoy</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-tile-header">
+                        <div class="stat-tile-label">Promedio</div>
+                        <div class="stat-tile-icon" style="background:rgba(24,95,165,0.1);">📊</div>
+                    </div>
+                    <div id="promedioHoras" class="stat-tile-num">0h</div>
+                    <div class="stat-tile-sub">por trabajador</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-tile-header">
+                        <div class="stat-tile-label">Registros</div>
+                        <div class="stat-tile-icon" style="background:rgba(13,14,18,0.06);">📋</div>
+                    </div>
+                    <div id="totalRegistros" class="stat-tile-num">0</div>
+                    <div class="stat-tile-sub">sesiones totales</div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters-card">
+                <div class="filter-item">
+                    <label>Fecha</label>
                     <input type="date" id="fecha" class="filtro-input">
                 </div>
-                <div class="filtro-grupo">
-                    <label>👤 Trabajador</label>
+                <div class="filter-item">
+                    <label>Trabajador</label>
                     <select id="trabajador" class="filtro-input">
                         <option value="">Todos los trabajadores</option>
                     </select>
                 </div>
-                <div class="filtro-grupo">
-                    <label>&nbsp;</label>
-                    <button onclick="cargarReportes()" class="btn-filtrar">🔍 Aplicar Filtros</button>
-                </div>
-                <div class="filtro-grupo">
-                    <label>&nbsp;</label>
-                    <button onclick="exportarExcel()" class="btn-exportar">📎 Exportar a Excel</button>
-                </div>
+                <button onclick="cargarReportes()" class="btn-filter">Filtrar</button>
+                <button onclick="exportarExcel()" class="btn-export">Exportar CSV</button>
             </div>
-        </div>
-        
-        <!-- Tarjetas de estadísticas -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon">👥</div>
-                <div class="stat-info">
-                    <h3>Trabajadores activos</h3>
-                    <p id="totalActivos" class="stat-number">0</p>
+
+            <!-- Table -->
+            <div class="table-card">
+                <div class="table-header">
+                    <h3>Registros de Picking</h3>
+                    <span id="contadorRegistros" class="record-count">— registros</span>
                 </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">⏱️</div>
-                <div class="stat-info">
-                    <h3>Total horas</h3>
-                    <p id="totalHoras" class="stat-number">0h</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon">📊</div>
-                <div class="stat-info">
-                    <h3>Promedio por trabajador</h3>
-                    <p id="promedioHoras" class="stat-number">0h</p>
+                <div class="table-wrapper">
+                    <table id="reportesTabla">
+                        <thead>
+                            <tr>
+                                <th>Trabajador</th>
+                                <th>DNI</th>
+                                <th>Fecha</th>
+                                <th>Hora inicio</th>
+                                <th>Hora fin</th>
+                                <th>Tiempo total</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportesBody">
+                            <tr>
+                                <td colspan="7" class="text-center td-muted">Cargando datos...</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon">📝</div>
-                <div class="stat-info">
-                    <h3>Total registros</h3>
-                    <p id="totalRegistros" class="stat-number">0</p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Tabla de reportes -->
-        <div class="tabla-container">
-            <h3>📋 Registros de Picking</h3>
-            <div class="table-wrapper">
-                <table id="reportesTabla">
-                    <thead>
-                        <tr>
-                            <th>Trabajador</th>
-                            <th>DNI</th>
-                            <th>Fecha</th>
-                            <th>Hora Inicio</th>
-                            <th>Hora Fin</th>
-                            <th>Tiempo Total</th>
-                        </tr>
-                    </thead>
-                    <tbody id="reportesBody">
-                        <tr>
-                            <td colspan="6" class="text-center">Cargando datos...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+
         </div>
     </div>
-    
+
     <script src="js/admin.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 </body>
+
 </html>

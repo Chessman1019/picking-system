@@ -3,32 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Control de Picking</title>
+    <title>PickFlow — Control de Picking</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <div class="container">
+    <div class="login-page">
         <div class="login-card">
-            <div class="logo">
-                <h1>📦 Sistema de Picking</h1>
+            <div class="brand">
+                <div class="brand-icon">📦</div>
+                <h1>PickFlow</h1>
                 <p>Control de tiempos</p>
             </div>
-            
+
             <form id="loginForm">
-                <div class="form-group">
-                    <label for="dni">DNI</label>
-                    <input type="text" id="dni" name="dni" placeholder="Ingrese su DNI" required>
+                <div class="field-group">
+                    <label for="dni">Documento de identidad</label>
+                    <input type="text" id="dni" name="dni" placeholder="Ingrese su DNI" required autocomplete="off">
                 </div>
-                
-                <button type="submit" class="btn-login">
-                    <span>🔑</span> Iniciar Sesión
-                </button>
+                <button type="submit" class="btn-primary">Acceder al sistema</button>
             </form>
-            
-            <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+            <div id="errorMessage" class="error-message"></div>
+
+            <div class="login-footer">Sistema de control de picking · v2.0</div>
         </div>
     </div>
-    
+
     <script src="js/login.js"></script>
 </body>
 </html>

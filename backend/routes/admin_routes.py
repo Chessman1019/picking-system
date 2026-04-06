@@ -25,13 +25,25 @@ def get_reportes():
     resultados = query.all()
     
     reportes = []
+    
     for registro, usuario in resultados:
         tiempo_total = None
         duracion_horas = 0
+        duracion_segundos = 0
+        
         if registro.hora_fin:
             delta = registro.hora_fin - registro.hora_inicio
-            duracion_horas = delta.total_seconds() / 3600
-            tiempo_total = f"{duracion_horas:.2f}h"
+            duracion_segundos = int(delta.total_seconds())
+            
+            # Cálculo de horas, minutos, segundos
+            horas = duracion_segundos // 3600
+            minutos = (duracion_segundos % 3600) // 60
+            segs = duracion_segundos % 60
+            
+            tiempo_total = f"{horas}h {minutos}m {segs}s"
+            duracion_horas = duracion_segundos / 3600
+        else:
+            tiempo_total = "En curso"
         
         reportes.append({
             'trabajador': usuario.nombre,
@@ -40,7 +52,8 @@ def get_reportes():
             'hora_inicio': registro.hora_inicio.strftime('%H:%M:%S'),
             'hora_fin': registro.hora_fin.strftime('%H:%M:%S') if registro.hora_fin else None,
             'tiempo_total': tiempo_total,
-            'duracion_horas': round(duracion_horas, 2)
+            'duracion_horas': round(duracion_horas, 2),
+            'duracion_segundos': duracion_segundos
         })
     
     return jsonify(reportes)

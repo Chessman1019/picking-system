@@ -4,91 +4,130 @@ let usuario = null;
 let intervalReloj = null;
 let intervalEstado = null;
 
-// Cargar usuario al iniciar
 document.addEventListener('DOMContentLoaded', async () => {
     const usuarioData = sessionStorage.getItem('usuario');
-    if (!usuarioData) {
-        window.location.href = 'index.html';
-        return;
-    }
-    
+    if (!usuarioData) { window.location.href = 'index.html'; return; }
+
     usuario = JSON.parse(usuarioData);
-    
-    if (usuario.rol === 'admin') {
-        window.location.href = 'admin.html';
-        return;
-    }
-    
-    // Mostrar información del usuario
+    if (usuario.rol === 'admin') { window.location.href = 'admin.html'; return; }
+
+    // Show user info
     document.getElementById('nombreTrabajador').textContent = usuario.nombre;
-    document.getElementById('dniTrabajador').textContent = usuario.dni;
-    
-    // Iniciar reloj
+    document.getElementById('dniTrabajador').textContent = 'DNI ' + usuario.dni;
+
+    // Avatar initials
+    const initials = usuario.nombre.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+    document.getElementById('avatarLetras').textContent = initials;
+
     iniciarReloj();
-    
-    // Cargar estado inicial
     await cargarEstado();
-    
-    // Actualizar estado cada 5 segundos
+    await cargarHistorial();
     intervalEstado = setInterval(cargarEstado, 5000);
 });
 
+// RELOJ EN FORMATO 12 HORAS
 function iniciarReloj() {
-    intervalReloj = setInterval(() => {
+    function tick() {
         const ahora = new Date();
-        document.getElementById('reloj').textContent = ahora.toLocaleTimeString('es-ES');
+        let horas = ahora.getHours();
+        const minutos = String(ahora.getMinutes()).padStart(2, '0');
+        const segundos = String(ahora.getSeconds()).padStart(2, '0');
+        const ampm = horas >= 12 ? 'PM' : 'AM';
+        horas = horas % 12;
+        horas = horas ? horas : 12;
+        const horasStr = String(horas).padStart(2, '0');
+
+        document.getElementById('horaH').textContent = horasStr;
+        document.getElementById('horaM').textContent = minutos;
+        document.getElementById('horaS').textContent = segundos;
+        document.getElementById('ampm').textContent = ampm;
+
         document.getElementById('fechaActual').textContent = ahora.toLocaleDateString('es-ES', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
         });
-    }, 1000);
+    }
+    tick();
+    intervalReloj = setInterval(tick, 1000);
 }
+// =================== HISTORIAL ===================
+async function cargarHistorial() {
+    try {
+        const res = await fetch(`${API_URL}/api/trabajador/historial/${usuario.id}`);
+        const data = await res.json();
+        mostrarHistorial(data.historial);
+    } catch (error) {
+        console.error('Error cargando historial:', error);
+    }
+}
+
+function mostrarHistorial(historial) {
+    const tbody = document.getElementById('historialBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (!historial.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center td-muted">Sin registros previos</td></tr>';
+        return;
+    }
+
+    historial.forEach(h => {
+        const row = tbody.insertRow();
+        row.insertCell(0).textContent = h.fecha;
+        row.insertCell(1).textContent = h.hora_inicio;
+        row.insertCell(2).textContent = h.hora_fin;
+        row.insertCell(3).textContent = h.tiempo_total;
+    });
+}
+
 
 async function cargarEstado() {
     try {
         const response = await fetch(`${API_URL}/api/trabajador/estado/${usuario.id}`);
         const data = await response.json();
-        
-        const estadoIcono = document.getElementById('estadoIcono');
-        const estadoTexto = document.getElementById('estadoTexto');
-        const btnIniciar = document.getElementById('btnIniciar');
-        const btnFinalizar = document.getElementById('btnFinalizar');
-        const tiempoTranscurrido = document.getElementById('tiempoTranscurrido');
-        
+
+        const pill = document.getElementById('statusPill');
+        const dot = document.getElementById('statusDot');
+        const label = document.getElementById('statusLabel');
+        const texto = document.getElementById('estadoTexto');
+        const tiempo = document.getElementById('tiempoTranscurrido');
+        const btnIni = document.getElementById('btnIniciar');
+        const btnFin = document.getElementById('btnFinalizar');
+
         if (data.activo && data.registro_activo) {
-            estadoIcono.textContent = '🟢';
-            estadoTexto.textContent = 'Picking en curso';
-            btnIniciar.style.display = 'none';
-            btnFinalizar.style.display = 'block';
-            
-            // Calcular tiempo transcurrido
+            pill.className = 'status-pill status-active';
+            dot.className = 'status-dot status-dot-active';
+            label.textContent = 'Picking en curso';
+            texto.textContent = 'Jornada activa desde las ' + data.registro_activo.hora_inicio;
+            btnIni.style.display = 'none';
+            btnFin.style.display = 'block';
+
+            // Elapsed time
             const inicio = new Date(data.registro_activo.hora_inicio);
-            const ahora = new Date();
-            const diff = Math.floor((ahora - inicio) / 1000);
-            const horas = Math.floor(diff / 3600);
-            const minutos = Math.floor((diff % 3600) / 60);
-            tiempoTranscurrido.textContent = `Tiempo actual: ${horas}h ${minutos}min`;
+            const diff = Math.floor((new Date() - inicio) / 1000);
+            const h = Math.floor(diff / 3600);
+            const m = Math.floor((diff % 3600) / 60);
+            tiempo.textContent = `Tiempo transcurrido: ${h}h ${m}min`;
         } else {
-            estadoIcono.textContent = '⏸️';
-            estadoTexto.textContent = 'No hay picking activo';
-            btnIniciar.style.display = 'block';
-            btnFinalizar.style.display = 'none';
-            tiempoTranscurrido.textContent = '';
+            pill.className = 'status-pill status-idle';
+            dot.className = 'status-dot';
+            dot.style.background = 'var(--muted)';
+            label.textContent = 'Sin picking activo';
+            texto.textContent = 'No hay sesión iniciada';
+            tiempo.textContent = '';
+            btnIni.style.display = 'block';
+            btnFin.style.display = 'none';
         }
-        
-        // Actualizar resumen del día
+
+        // Summary
         if (data.ultimo_registro) {
-            const totalHoy = document.getElementById('totalHoy');
-            const ultimoRegistro = document.getElementById('ultimoRegistro');
-            
             if (data.ultimo_registro.tiempo_total) {
-                totalHoy.textContent = data.ultimo_registro.tiempo_total;
+                document.getElementById('totalHoy').innerHTML = data.ultimo_registro.tiempo_total;
             }
-            ultimoRegistro.textContent = data.ultimo_registro.hora_inicio || '--';
+            if (data.ultimo_registro.hora_inicio) {
+                document.getElementById('ultimoRegistro').textContent = data.ultimo_registro.hora_inicio;
+            }
         }
-        
+
     } catch (error) {
         console.error('Error al cargar estado:', error);
     }
@@ -98,22 +137,18 @@ async function iniciarPicking() {
     try {
         const response = await fetch(`${API_URL}/api/trabajador/iniciar`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ usuario_id: usuario.id })
         });
-        
         const data = await response.json();
-        
+
         if (response.ok && data.success) {
-            mostrarNotificacion('✅ Picking iniciado correctamente', 'success');
+            mostrarNotificacion('Picking iniciado correctamente', 'success');
             await cargarEstado();
         } else {
             mostrarNotificacion(data.error || 'Error al iniciar picking', 'error');
         }
     } catch (error) {
-        console.error('Error:', error);
         mostrarNotificacion('Error de conexión', 'error');
     }
 }
@@ -122,66 +157,31 @@ async function finalizarPicking() {
     try {
         const response = await fetch(`${API_URL}/api/trabajador/finalizar`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ usuario_id: usuario.id })
         });
-        
         const data = await response.json();
-        
+
         if (response.ok && data.success) {
-            mostrarNotificacion('✅ Picking finalizado correctamente', 'success');
+            mostrarNotificacion('Picking finalizado correctamente', 'success');
             await cargarEstado();
         } else {
             mostrarNotificacion(data.error || 'Error al finalizar picking', 'error');
         }
     } catch (error) {
-        console.error('Error:', error);
         mostrarNotificacion('Error de conexión', 'error');
     }
 }
 
 function mostrarNotificacion(mensaje, tipo) {
-    const notificacion = document.createElement('div');
-    notificacion.className = `notificacion notificacion-${tipo}`;
-    notificacion.textContent = mensaje;
-    notificacion.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 15px 20px;
-        background: ${tipo === 'success' ? '#00b894' : '#ff4757'};
-        color: white;
-        border-radius: 10px;
-        z-index: 1000;
-        animation: slideIn 0.3s ease;
-    `;
-    
-    document.body.appendChild(notificacion);
-    
-    setTimeout(() => {
-        notificacion.remove();
-    }, 3000);
+    const n = document.createElement('div');
+    n.className = `notificacion notificacion-${tipo}`;
+    n.textContent = (tipo === 'success' ? '✓ ' : '✕ ') + mensaje;
+    document.body.appendChild(n);
+    setTimeout(() => n.remove(), 3500);
 }
 
 function cerrarSesion() {
     sessionStorage.clear();
     window.location.href = 'index.html';
 }
-
-// Agregar estilos de animación
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-`;
-document.head.appendChild(style);

@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PickFlow — Mi Turno</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
-
 <body>
     <div class="worker-page">
         <div class="page-wrapper">
@@ -25,12 +23,28 @@
             <!-- Main card -->
             <div class="worker-card">
 
-                <div class="clock-time">
-                    <span id="horaH">--</span><span class="clock-colon">:</span>
-                    <span id="horaM">--</span><span class="clock-colon">:</span>
-                    <span id="horaS">--</span>
-                    <span id="ampm" style="font-size: 22px; margin-left: 8px;"></span>
+                <!-- Clock -->
+                <div class="clock-section">
+                    <div class="clock-label">Hora actual</div>
+                    <div class="clock-digits">
+                        <div class="digit-block">
+                            <div id="horaH" class="digit-num">--</div>
+                        </div>
+                        <div class="clock-sep">:</div>
+                        <div class="digit-block">
+                            <div id="horaM" class="digit-num">--</div>
+                        </div>
+                        <div class="clock-sep">:</div>
+                        <div class="digit-block">
+                            <div id="horaS" class="digit-num">--</div>
+                        </div>
+                        <div class="ampm-block">
+                            <span id="ampm" class="ampm-tag">--</span>
+                        </div>
+                    </div>
+                    <div id="fechaActual" class="clock-date"></div>
                 </div>
+
                 <!-- Status -->
                 <div class="status-section">
                     <div id="statusPill" class="status-pill status-idle">
@@ -39,38 +53,51 @@
                     </div>
                     <div id="estadoTexto" class="status-h3">No hay sesión iniciada</div>
                     <div id="tiempoTranscurrido" class="status-sub"></div>
+
+                    <div id="progressWrap" class="progress-wrap" style="display:none;">
+                        <div class="progress-header">
+                            <span>Progreso de jornada</span>
+                            <span id="progressPct" class="progress-pct">0%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div id="progressFill" class="progress-fill" style="width:0%"></div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Action buttons -->
                 <div class="actions-section">
                     <button id="btnIniciar" onclick="iniciarPicking()" class="btn-start">
-                        Iniciar picking
+                        ▶&nbsp; Iniciar picking
                     </button>
                     <button id="btnFinalizar" onclick="finalizarPicking()" class="btn-stop" style="display:none;">
-                        Finalizar picking
+                        ■&nbsp; Finalizar picking
                     </button>
                 </div>
 
-                <!-- Daily summary -->
+                <!-- Summary -->
                 <div class="summary-section">
                     <div class="summary-item">
                         <span class="summary-label">Total hoy</span>
-                        <div id="totalHoy" class="summary-val">0h <small>0min</small></div>
+                        <div id="totalHoy" class="summary-val summary-accent">0h <small>0min</small></div>
                     </div>
                     <div class="summary-item">
                         <span class="summary-label">Último inicio</span>
                         <div id="ultimoRegistro" class="summary-val">—</div>
                     </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Sesiones</span>
+                        <div id="totalSesiones" class="summary-val">0</div>
+                    </div>
                 </div>
 
-
+                <!-- Historial -->
                 <div class="historial-section">
                     <div class="historial-header">
-                        <h3>📋 Historial de jornadas</h3>
-                        <span class="historial-sub">días anteriores</span>
+                        <span class="historial-title">Historial del día</span>
                     </div>
                     <div class="table-wrapper">
-                        <table class="historial-table">
+                        <table>
                             <thead>
                                 <tr>
                                     <th>Fecha</th>
@@ -81,7 +108,7 @@
                             </thead>
                             <tbody id="historialBody">
                                 <tr>
-                                    <td colspan="4">Cargando...</td>
+                                    <td colspan="4" class="text-center td-muted">Cargando...</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -94,5 +121,4 @@
 
     <script src="js/trabajador.js"></script>
 </body>
-
 </html>

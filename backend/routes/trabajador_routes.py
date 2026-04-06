@@ -45,6 +45,7 @@ def iniciar_picking():
         'registro': registro.to_dict()
     })
 
+
 @bp.route('/finalizar', methods=['POST'])
 def finalizar_picking():
     data = request.get_json()
@@ -74,30 +75,7 @@ def finalizar_picking():
         'mensaje': 'Picking finalizado correctamente',
         'registro': registro.to_dict()
     })
-@bp.route('/historial/<int:usuario_id>', methods=['GET'])
-def get_historial(usuario_id):
-    registros = Registro.query.filter_by(usuario_id=usuario_id)\
-                              .order_by(Registro.fecha.desc()).all()
 
-    historial = []
-    for reg in registros:
-        tiempo_total = None
-        if reg.hora_fin:
-            delta = reg.hora_fin - reg.hora_inicio
-            segundos = int(delta.total_seconds())
-            horas = segundos // 3600
-            minutos = (segundos % 3600) // 60
-            segs = segundos % 60
-            tiempo_total = f"{horas}h {minutos}m {segs}s"
-
-        historial.append({
-            'fecha': reg.fecha.strftime('%d/%m/%Y'),
-            'hora_inicio': reg.hora_inicio.strftime('%I:%M:%S %p'),
-            'hora_fin': reg.hora_fin.strftime('%I:%M:%S %p') if reg.hora_fin else '—',
-            'tiempo_total': tiempo_total or 'En curso'
-        })
-
-    return jsonify({'historial': historial})
 
 @bp.route('/estado/<int:usuario_id>', methods=['GET'])
 def estado_picking(usuario_id):
@@ -118,3 +96,31 @@ def estado_picking(usuario_id):
         'registro_activo': registro_activo.to_dict() if registro_activo else None,
         'ultimo_registro': ultimo_registro.to_dict() if ultimo_registro else None
     })
+
+
+@bp.route('/historial/<int:usuario_id>', methods=['GET'])
+def get_historial(usuario_id):
+    """Obtener historial completo de tiempos del trabajador en formato 12h"""
+    registros = Registro.query.filter_by(
+        usuario_id=usuario_id
+    ).order_by(Registro.fecha.desc()).all()
+    
+    historial = []
+    for reg in registros:
+        tiempo_total = None
+        if reg.hora_fin:
+            delta = reg.hora_fin - reg.hora_inicio
+            segundos = int(delta.total_seconds())
+            horas = segundos // 3600
+            minutos = (segundos % 3600) // 60
+            segs = segundos % 60
+            tiempo_total = f"{horas}h {minutos}m {segs}s"
+        
+        historial.append({
+            'fecha': reg.fecha.strftime('%d/%m/%Y'),
+            'hora_inicio': reg.hora_inicio.strftime('%I:%M:%S %p'),
+            'hora_fin': reg.hora_fin.strftime('%I:%M:%S %p') if reg.hora_fin else '—',
+            'tiempo_total': tiempo_total or 'En curso'
+        })
+    
+    return jsonify({'historial': historial})

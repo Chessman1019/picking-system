@@ -31,6 +31,9 @@ def get_reportes():
         duracion_horas = 0
         duracion_segundos = 0
         
+        # Formato 12 horas para hora_inicio
+        hora_inicio_12h = registro.hora_inicio.strftime('%I:%M:%S %p')
+        
         if registro.hora_fin:
             delta = registro.hora_fin - registro.hora_inicio
             duracion_segundos = int(delta.total_seconds())
@@ -42,15 +45,19 @@ def get_reportes():
             
             tiempo_total = f"{horas}h {minutos}m {segs}s"
             duracion_horas = duracion_segundos / 3600
+            
+            # Formato 12 horas para hora_fin
+            hora_fin_12h = registro.hora_fin.strftime('%I:%M:%S %p')
         else:
             tiempo_total = "En curso"
+            hora_fin_12h = None
         
         reportes.append({
             'trabajador': usuario.nombre,
             'dni': usuario.dni,
             'fecha': registro.fecha.strftime('%Y-%m-%d'),
-            'hora_inicio': registro.hora_inicio.strftime('%H:%M:%S'),
-            'hora_fin': registro.hora_fin.strftime('%H:%M:%S') if registro.hora_fin else None,
+            'hora_inicio': hora_inicio_12h,
+            'hora_fin': hora_fin_12h,
             'tiempo_total': tiempo_total,
             'duracion_horas': round(duracion_horas, 2),
             'duracion_segundos': duracion_segundos

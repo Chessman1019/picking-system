@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5000'; // Cambiar por URL de producción
+const API_URL = 'https://picking-system-backend.onrender.com';
 
 let usuario = null;
 

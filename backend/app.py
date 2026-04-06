@@ -5,6 +5,13 @@ from extensions import db
 from routes import auth_routes, trabajador_routes, admin_routes
 import os
 
+from flask import Flask, send_from_directory
+from flask_cors import CORS
+from config import Config
+from extensions import db
+from routes import auth_routes, trabajador_routes, admin_routes
+import os
+
 def create_app():
     app = Flask(__name__, static_folder='../frontend', static_url_path='')
     app.config.from_object(Config)
@@ -57,7 +64,9 @@ def create_app():
     
     return app
 
+# 👇 ESTO ES LO NUEVO - La aplicación para Gunicorn 👇
+app = create_app()
+
 if __name__ == '__main__':
-    app = create_app()
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)

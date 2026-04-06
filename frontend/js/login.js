@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5000'; // Cambiar por URL de producción
+const API_URL = 'https://picking-system-backend.onrender.com';
 
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -18,10 +18,8 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
         const data = await response.json();
         
         if (response.ok && data.success) {
-            // Guardar usuario en sessionStorage
             sessionStorage.setItem('usuario', JSON.stringify(data.usuario));
             
-            // Redirigir según rol
             if (data.usuario.rol === 'admin') {
                 window.location.href = 'admin.html';
             } else {

@@ -3,7 +3,6 @@ const API_URL = 'https://picking-system-backend.onrender.com';
 let usuario = null;
 let intervalReloj = null;
 let intervalEstado = null;
-const JORNADA_HORAS = 8; // horas de jornada completa para la barra de progreso
 
 document.addEventListener('DOMContentLoaded', async () => {
     const usuarioData = sessionStorage.getItem('usuario');
@@ -12,11 +11,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     usuario = JSON.parse(usuarioData);
     if (usuario.rol === 'admin') { window.location.href = 'admin.html'; return; }
 
-    // Mostrar info del usuario
     document.getElementById('nombreTrabajador').textContent = usuario.nombre;
     document.getElementById('dniTrabajador').textContent = 'DNI ' + usuario.dni;
 
-    // Iniciales del avatar
     const initials = usuario.nombre.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
     document.getElementById('avatarLetras').textContent = initials;
 
@@ -53,58 +50,42 @@ function iniciarReloj() {
     intervalReloj = setInterval(tick, 1000);
 }
 
-// =============================================
-// ESTADO
-// =============================================
 async function cargarEstado() {
     try {
         const response = await fetch(`${API_URL}/api/trabajador/estado/${usuario.id}`);
         const data = await response.json();
 
-        const pill    = document.getElementById('statusPill');
-        const dot     = document.getElementById('statusDot');
-        const label   = document.getElementById('statusLabel');
-        const texto   = document.getElementById('estadoTexto');
-        const tiempo  = document.getElementById('tiempoTranscurrido');
-        const btnIni  = document.getElementById('btnIniciar');
-        const btnFin  = document.getElementById('btnFinalizar');
-        const progWrap = document.getElementById('progressWrap');
-        const progFill = document.getElementById('progressFill');
-        const progPct  = document.getElementById('progressPct');
+        const pill = document.getElementById('statusPill');
+        const dot = document.getElementById('statusDot');
+        const label = document.getElementById('statusLabel');
+        const texto = document.getElementById('estadoTexto');
+        const tiempo = document.getElementById('tiempoTranscurrido');
+        const btnIni = document.getElementById('btnIniciar');
+        const btnFin = document.getElementById('btnFinalizar');
 
         if (data.activo && data.registro_activo) {
             pill.className = 'status-pill status-active';
-            dot.className  = 'status-dot status-dot-active';
+            dot.className = 'status-dot status-dot-active';
             label.textContent = 'Picking en curso';
             texto.textContent = 'Jornada activa desde las ' + data.registro_activo.hora_inicio;
             btnIni.style.display = 'none';
             btnFin.style.display = 'block';
 
-            // Tiempo transcurrido
             const inicio = new Date(data.registro_activo.hora_inicio);
-            const diff   = Math.floor((new Date() - inicio) / 1000);
+            const diff = Math.floor((new Date() - inicio) / 1000);
             const h = Math.floor(diff / 3600);
             const m = Math.floor((diff % 3600) / 60);
             tiempo.textContent = `Tiempo transcurrido: ${h}h ${m}min`;
-
-            // Barra de progreso (sobre jornada de JORNADA_HORAS horas)
-            const pct = Math.min(Math.round((diff / (JORNADA_HORAS * 3600)) * 100), 100);
-            progWrap.style.display = 'block';
-            progFill.style.width = pct + '%';
-            progPct.textContent  = pct + '%';
-
         } else {
             pill.className = 'status-pill status-idle';
-            dot.className  = 'status-dot';
+            dot.className = 'status-dot';
             label.textContent = 'Sin picking activo';
             texto.textContent = 'No hay sesión iniciada';
             tiempo.textContent = '';
             btnIni.style.display = 'block';
             btnFin.style.display = 'none';
-            progWrap.style.display = 'none';
         }
 
-        // Resumen
         if (data.ultimo_registro) {
             if (data.ultimo_registro.tiempo_total) {
                 document.getElementById('totalHoy').innerHTML = data.ultimo_registro.tiempo_total;
@@ -119,12 +100,9 @@ async function cargarEstado() {
     }
 }
 
-// =============================================
-// HISTORIAL
-// =============================================
 async function cargarHistorial() {
     try {
-        const res  = await fetch(`${API_URL}/api/trabajador/historial/${usuario.id}`);
+        const res = await fetch(`${API_URL}/api/trabajador/historial/${usuario.id}`);
         const data = await res.json();
         mostrarHistorial(data.historial || []);
     } catch (error) {
@@ -137,7 +115,6 @@ function mostrarHistorial(historial) {
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    // Actualizar contador de sesiones
     const sesEl = document.getElementById('totalSesiones');
     if (sesEl) sesEl.textContent = historial.length;
 
@@ -149,22 +126,12 @@ function mostrarHistorial(historial) {
     historial.forEach(h => {
         const row = tbody.insertRow();
         row.insertCell(0).textContent = h.fecha;
-
-        const cIni = row.insertCell(1);
-        cIni.textContent = h.hora_inicio;
-        cIni.className = 'td-bold';
-
+        row.insertCell(1).textContent = h.hora_inicio;
         row.insertCell(2).textContent = h.hora_fin || '—';
-
-        const cDur = row.insertCell(3);
-        cDur.textContent = h.tiempo_total || 'En curso';
-        if (!h.hora_fin) cDur.style.color = 'var(--green)';
+        row.insertCell(3).textContent = h.tiempo_total || 'En curso';
     });
 }
 
-// =============================================
-// ACCIONES
-// =============================================
 async function iniciarPicking() {
     try {
         const response = await fetch(`${API_URL}/api/trabajador/iniciar`, {

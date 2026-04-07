@@ -6,8 +6,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Obtener la URL de la base de datos
-DATABASE_URL = os.environ.get('DATABASE_URL')
+import os
 
+DATABASE_URL = os.getenv("DATABASE_URL")
 print("🔌 Conectando a la base de datos...")
 
 # Conectar a PostgreSQL

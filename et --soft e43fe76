@@ -1,0 +1,14 @@
+[33mdb64390[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m feat: mejoras
+[33m02da6ac[m feat: Reloj admin 12h y todos los reportes en formato AM/PM
+[33me43fe76[m[33m ([m[1;31morigin/main[m[33m)[m feat: Actualizar admin_routes, trabajador_routes, styles, trabajador.js, trabajador.html y agregar actualizar_usuarios.py
+[33m7ad914c[m fix: Corregir app.py - eliminar duplicado y mala indentación
+[33m21bf57c[m feat: Mejoras completas - reloj 12h, historial trabajador, PDF profesional, tiempos exactos
+[33m1975632[m fix: Agregar __init__.py a routes
+[33me9f7220[m fix: Cambiar API_URL a producción en trabajador.js y admin.js
+[33m29826b8[m fix: Agregar contenido completo al frontend
+[33m9dedb48[m fix: Forzar Python 3.11 para Netlify
+[33m2fe4608[m fix: conexión postgresql y config producción
+[33m4153e6c[m fix: Agregar gunicorn explícitamente
+[33m997caa2[m fix: Exponer app para Gunicorn
+[33m39b1812[m Remove .env file and update .gitignore
+[33mdc3405b[m feat: Sistema de control de picking v1.0

@@ -12,12 +12,37 @@ const AVATAR_COLORS = [
 
 let usuario = null;
 
+// =============================================
+// RELOJ ADMIN EN FORMATO 12 HORAS
+// =============================================
+function iniciarRelojAdmin() {
+    function tick() {
+        const ahora = new Date();
+        let horas = ahora.getHours();
+        const minutos = String(ahora.getMinutes()).padStart(2, '0');
+        const segundos = String(ahora.getSeconds()).padStart(2, '0');
+        const ampm = horas >= 12 ? 'PM' : 'AM';
+        horas = horas % 12;
+        horas = horas ? horas : 12;
+        const horasStr = String(horas).padStart(2, '0');
+        
+        const relojDiv = document.getElementById('adminClock');
+        if (relojDiv) {
+            relojDiv.textContent = `${horasStr}:${minutos}:${segundos} ${ampm}`;
+        }
+    }
+    tick();
+    setInterval(tick, 1000);
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     const usuarioData = sessionStorage.getItem('usuario');
     if (!usuarioData) { window.location.href = 'index.html'; return; }
 
     usuario = JSON.parse(usuarioData);
     if (usuario.rol !== 'admin') { window.location.href = 'trabajador.html'; return; }
+
+    iniciarRelojAdmin();
 
     await cargarTrabajadores();
 
@@ -34,6 +59,7 @@ async function cargarTrabajadores() {
         const trabajadores = await response.json();
 
         const select = document.getElementById('trabajador');
+        select.innerHTML = '<option value="">Todos los trabajadores</option>';
         trabajadores.forEach(t => {
             const option = document.createElement('option');
             option.value = t.id;
@@ -70,33 +96,20 @@ async function cargarReportes() {
                 const row = tbody.insertRow();
                 const activo = !r.hora_fin;
 
-                // Initials & color
                 const initials = r.trabajador.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
                 const color = AVATAR_COLORS[i % AVATAR_COLORS.length];
 
-                // Cells
                 row.insertCell(0).innerHTML = `
                     <div class="worker-cell">
                         <div class="mini-avatar" style="background:${color}; color:var(--ink)">${initials}</div>
                         ${escapeHtml(r.trabajador)}
                     </div>`;
 
-                const dniCell = row.insertCell(1);
-                dniCell.textContent = r.dni;
-                dniCell.className = 'td-muted';
-
-                const fechaCell = row.insertCell(2);
-                fechaCell.textContent = r.fecha;
-                fechaCell.className = 'td-muted';
-
+                row.insertCell(1).textContent = r.dni;
+                row.insertCell(2).textContent = r.fecha;
                 row.insertCell(3).textContent = r.hora_inicio;
-
                 row.insertCell(4).textContent = r.hora_fin || '—';
-
-                const durCell = row.insertCell(5);
-                durCell.textContent = r.tiempo_total || 'En curso';
-                durCell.className = 'td-bold';
-
+                row.insertCell(5).textContent = r.tiempo_total || 'En curso';
                 row.insertCell(6).innerHTML = activo
                     ? '<span class="badge-active">En curso</span>'
                     : '<span class="badge-done">Finalizado</span>';
@@ -108,7 +121,6 @@ async function cargarReportes() {
             });
         }
 
-        // Update stats
         document.getElementById('totalActivos').textContent = reportes.filter(r => !r.hora_fin).length;
         document.getElementById('totalHoras').textContent = `${totalHoras.toFixed(1)}h`;
         document.getElementById('promedioHoras').textContent = trabajadoresUnicos.size

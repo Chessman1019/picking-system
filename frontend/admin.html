@@ -6,15 +6,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PickFlow — Panel de Control</title>
     <link rel="stylesheet" href="css/styles.css">
+
 </head>
 
 <body>
     <div class="admin-page">
         <div class="page-wrapper-wide">
 
-            <!-- Top bar -->
+            <!-- Top bar con reloj -->
             <div class="admin-topbar">
                 <div class="admin-title">Panel de <span>Control</span></div>
+                <div class="admin-clock" id="adminClock"
+                    style="font-family: monospace; font-size: 20px; background: var(--ink-2); padding: 8px 20px; border-radius: 40px; color: var(--gold); letter-spacing: 1px;">
+                    --:--:-- --
+                </div>
                 <button onclick="cerrarSesion()" class="btn-logout-light">Cerrar sesión</button>
             </div>
 
@@ -67,7 +72,7 @@
                     </select>
                 </div>
                 <button onclick="cargarReportes()" class="btn-filter">Filtrar</button>
-                <button onclick="exportarExcel()" class="btn-export">Exportar CSV</button>
+                <button onclick="exportarExcel()" class="btn-export">Exportar PDF</button>
             </div>
 
             <!-- Table -->

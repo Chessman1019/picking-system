@@ -5,9 +5,64 @@ let intervalReloj = null;
 let intervalEstado = null;
 let intervalTiempo = null;
 
-let totalBaseSegundos = 0; // acumulado del día
-let inicioActivo = null;   // inicio sesión activa
+let totalBaseSegundos = 0;
+let inicioActivo = null;
 
+// ============================
+// 🔥 HORA PERÚ
+// ============================
+function ahoraPeru() {
+    return new Date(new Date().toLocaleString("en-US", {
+        timeZone: "America/Lima"
+    }));
+}
+
+// ============================
+// 🔥 PARSEAR HORA BACKEND
+// ============================
+function parseHoraPeru(horaStr) {
+    if (!horaStr) return null;
+
+    const partes = horaStr.match(/(\d+):(\d+):(\d+)\s?(AM|PM)/i);
+    if (!partes) return null;
+
+    let h = parseInt(partes[1]);
+    const m = parseInt(partes[2]);
+    const s = parseInt(partes[3]);
+    const ampm = partes[4].toUpperCase();
+
+    if (ampm === 'PM' && h !== 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+
+    const ahora = ahoraPeru();
+
+    return new Date(
+        ahora.getFullYear(),
+        ahora.getMonth(),
+        ahora.getDate(),
+        h, m, s
+    );
+}
+
+// ============================
+// FORMATO
+// ============================
+function formatearSegundos(seg) {
+    const h = String(Math.floor(seg / 3600)).padStart(2, '0');
+    const m = String(Math.floor((seg % 3600) / 60)).padStart(2, '0');
+    const s = String(seg % 60).padStart(2, '0');
+    return `${h}:${m}:${s}`;
+}
+
+function formatearHoraPeru(date) {
+    return date.toLocaleTimeString('es-PE', {
+        timeZone: 'America/Lima'
+    });
+}
+
+// ============================
+// INIT
+// ============================
 document.addEventListener('DOMContentLoaded', async () => {
     const usuarioData = sessionStorage.getItem('usuario');
     if (!usuarioData) { window.location.href = 'index.html'; return; }
@@ -29,11 +84,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ============================
-// RELOJ
+// 🕒 RELOJ PERÚ
 // ============================
 function iniciarReloj() {
     function tick() {
-        const ahora = new Date();
+        const ahora = ahoraPeru();
 
         let horas = ahora.getHours();
         const minutos = String(ahora.getMinutes()).padStart(2, '0');
@@ -49,7 +104,8 @@ function iniciarReloj() {
         document.getElementById('ampm').textContent = ampm;
 
         document.getElementById('fechaActual').textContent =
-            ahora.toLocaleDateString('es-ES', {
+            ahora.toLocaleDateString('es-PE', {
+                timeZone: 'America/Lima',
                 weekday: 'long',
                 year: 'numeric',
                 month: 'long',
@@ -62,112 +118,91 @@ function iniciarReloj() {
 }
 
 // ============================
-// FORMATEAR TIEMPO
-// ============================
-function formatearSegundos(seg) {
-    const h = String(Math.floor(seg / 3600)).padStart(2, '0');
-    const m = String(Math.floor((seg % 3600) / 60)).padStart(2, '0');
-    const s = String(seg % 60).padStart(2, '0');
-    return `${h}:${m}:${s}`;
-}
-
-// ============================
-// ESTADO ACTUAL
+// ESTADO
 // ============================
 async function cargarEstado() {
     try {
-        const response = await fetch(`${API_URL}/api/trabajador/estado/${usuario.id}`);
-        const data = await response.json();
+        const res = await fetch(`${API_URL}/api/trabajador/estado/${usuario.id}`);
+        const data = await res.json();
 
-        const pill = document.getElementById('statusPill');
-        const dot = document.getElementById('statusDot');
-        const label = document.getElementById('statusLabel');
         const texto = document.getElementById('estadoTexto');
         const tiempo = document.getElementById('tiempoTranscurrido');
-        const btnIni = document.getElementById('btnIniciar');
-        const btnFin = document.getElementById('btnFinalizar');
 
-        if (intervalTiempo) {
-            clearInterval(intervalTiempo);
-            intervalTiempo = null;
-        }
+        if (intervalTiempo) clearInterval(intervalTiempo);
 
         if (data.activo && data.registro_activo) {
 
-            pill.className = 'status-pill status-active';
-            dot.className = 'status-dot status-dot-active';
-            label.textContent = 'Picking en curso';
-
-            const inicio = new Date(data.registro_activo.hora_inicio);
+            const inicio = parseHoraPeru(data.registro_activo.hora_inicio);
             inicioActivo = inicio;
 
-            texto.textContent = 'Jornada activa desde las ' +
-                inicio.toLocaleTimeString('es-ES');
+            texto.textContent =
+                'Jornada activa desde las ' + formatearHoraPeru(inicio);
 
-            btnIni.style.display = 'none';
-            btnFin.style.display = 'block';
-
-            // 🔥 TIEMPO EN VIVO
             intervalTiempo = setInterval(() => {
-                const ahora = new Date();
+
+                const ahora = ahoraPeru();
                 const diff = Math.floor((ahora - inicioActivo) / 1000);
 
-                tiempo.textContent = `Tiempo transcurrido: ${formatearSegundos(diff)}`;
+                tiempo.textContent =
+                    `Tiempo transcurrido: ${formatearSegundos(diff)}`;
 
-                // 🔥 TOTAL HOY EN VIVO
                 document.getElementById('totalHoy').textContent =
                     formatearSegundos(totalBaseSegundos + diff);
 
             }, 1000);
 
         } else {
-            pill.className = 'status-pill status-idle';
-            dot.className = 'status-dot';
-            label.textContent = 'Sin picking activo';
             texto.textContent = 'No hay sesión iniciada';
             tiempo.textContent = '';
-            btnIni.style.display = 'block';
-            btnFin.style.display = 'none';
-            inicioActivo = null;
         }
 
-        // ÚLTIMO INICIO
+        // 🔥 ÚLTIMO INICIO CORREGIDO
         if (data.ultimo_registro?.hora_inicio) {
-            const f = new Date(data.ultimo_registro.hora_inicio);
+
+            const f = parseHoraPeru(data.ultimo_registro.hora_inicio);
+
             document.getElementById('ultimoRegistro').textContent =
-                f.toLocaleTimeString('es-ES');
+                f ? formatearHoraPeru(f) : data.ultimo_registro.hora_inicio;
         }
 
-    } catch (error) {
-        console.error('Error al cargar estado:', error);
+    } catch (e) {
+        console.error(e);
     }
 }
 
 // ============================
 // HISTORIAL + TOTAL
 // ============================
+function parseDuracion(txt) {
+    if (!txt) return 0;
+
+    const h = txt.match(/(\d+)h/)?.[1] || 0;
+    const m = txt.match(/(\d+)m/)?.[1] || 0;
+    const s = txt.match(/(\d+)s/)?.[1] || 0;
+
+    return (+h * 3600) + (+m * 60) + (+s);
+}
+
 async function cargarHistorial() {
     try {
         const res = await fetch(`${API_URL}/api/trabajador/historial/${usuario.id}`);
         const data = await res.json();
 
         const historial = data.historial || [];
-        mostrarHistorial(historial);
 
-        // 🔥 SUMA TOTAL
         totalBaseSegundos = 0;
 
         historial.forEach(h => {
-            if (h.duracion_segundos) {
-                totalBaseSegundos += h.duracion_segundos;
-            }
+            totalBaseSegundos += parseDuracion(h.tiempo_total);
         });
 
         document.getElementById('totalHoy').textContent =
             formatearSegundos(totalBaseSegundos);
 
-    } catch (error) {
-        console.error('Error cargando historial:', error);
+        mostrarHistorial(historial);
+
+    } catch (e) {
+        console.error(e);
     }
 }
 
@@ -180,19 +215,10 @@ function mostrarHistorial(historial) {
 
     document.getElementById('totalSesiones').textContent = historial.length;
 
-    if (!historial.length) {
-        tbody.innerHTML = '<tr><td colspan="4">Sin registros</td></tr>';
-        return;
-    }
-
     historial.forEach(h => {
         const row = tbody.insertRow();
 
-        const fecha = new Date(h.fecha);
-
-        row.insertCell(0).textContent =
-            fecha.toLocaleDateString('es-ES');
-
+        row.insertCell(0).textContent = h.fecha;
         row.insertCell(1).textContent = h.hora_inicio;
         row.insertCell(2).textContent = h.hora_fin || '—';
         row.insertCell(3).textContent = h.tiempo_total || 'En curso';

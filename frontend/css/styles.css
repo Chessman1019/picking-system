@@ -1035,3 +1035,21 @@ tr:hover td { background: var(--bg3); }
     .digit-num       { font-size: 42px; }
     .clock-sep       { font-size: 34px; }
 }
+.btn-logout-light {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+    border: none;
+    padding: 9px 18px;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    font-family: var(--font-body);
+    box-shadow: 0 4px 12px rgba(201,168,76,0.25);
+}
+
+.btn-logout-light:hover { opacity: 0.85; transform: translateY(-1px); }
+.btn-logout-light:active { transform: translateY(0); }

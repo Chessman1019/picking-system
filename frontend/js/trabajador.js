@@ -3,6 +3,10 @@ const API_URL = 'https://picking-system-backend.onrender.com';
 let usuario = null;
 let intervalReloj = null;
 let intervalEstado = null;
+let intervalTiempo = null;
+
+let totalBaseSegundos = 0; // acumulado del día
+let inicioActivo = null;   // inicio sesión activa
 
 document.addEventListener('DOMContentLoaded', async () => {
     const usuarioData = sessionStorage.getItem('usuario');
@@ -18,38 +22,58 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('avatarLetras').textContent = initials;
 
     iniciarReloj();
-    await cargarEstado();
     await cargarHistorial();
+    await cargarEstado();
+
     intervalEstado = setInterval(cargarEstado, 5000);
 });
 
-// =============================================
-// RELOJ EN FORMATO 12 HORAS
-// =============================================
+// ============================
+// RELOJ
+// ============================
 function iniciarReloj() {
     function tick() {
         const ahora = new Date();
+
         let horas = ahora.getHours();
         const minutos = String(ahora.getMinutes()).padStart(2, '0');
         const segundos = String(ahora.getSeconds()).padStart(2, '0');
         const ampm = horas >= 12 ? 'PM' : 'AM';
+
         horas = horas % 12;
         horas = horas ? horas : 12;
-        const horasStr = String(horas).padStart(2, '0');
 
-        document.getElementById('horaH').textContent = horasStr;
+        document.getElementById('horaH').textContent = String(horas).padStart(2, '0');
         document.getElementById('horaM').textContent = minutos;
         document.getElementById('horaS').textContent = segundos;
         document.getElementById('ampm').textContent = ampm;
 
-        document.getElementById('fechaActual').textContent = ahora.toLocaleDateString('es-ES', {
-            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-        });
+        document.getElementById('fechaActual').textContent =
+            ahora.toLocaleDateString('es-ES', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
     }
+
     tick();
     intervalReloj = setInterval(tick, 1000);
 }
 
+// ============================
+// FORMATEAR TIEMPO
+// ============================
+function formatearSegundos(seg) {
+    const h = String(Math.floor(seg / 3600)).padStart(2, '0');
+    const m = String(Math.floor((seg % 3600) / 60)).padStart(2, '0');
+    const s = String(seg % 60).padStart(2, '0');
+    return `${h}:${m}:${s}`;
+}
+
+// ============================
+// ESTADO ACTUAL
+// ============================
 async function cargarEstado() {
     try {
         const response = await fetch(`${API_URL}/api/trabajador/estado/${usuario.id}`);
@@ -63,19 +87,39 @@ async function cargarEstado() {
         const btnIni = document.getElementById('btnIniciar');
         const btnFin = document.getElementById('btnFinalizar');
 
+        if (intervalTiempo) {
+            clearInterval(intervalTiempo);
+            intervalTiempo = null;
+        }
+
         if (data.activo && data.registro_activo) {
+
             pill.className = 'status-pill status-active';
             dot.className = 'status-dot status-dot-active';
             label.textContent = 'Picking en curso';
-            texto.textContent = 'Jornada activa desde las ' + data.registro_activo.hora_inicio;
+
+            const inicio = new Date(data.registro_activo.hora_inicio);
+            inicioActivo = inicio;
+
+            texto.textContent = 'Jornada activa desde las ' +
+                inicio.toLocaleTimeString('es-ES');
+
             btnIni.style.display = 'none';
             btnFin.style.display = 'block';
 
-            const inicio = new Date(data.registro_activo.hora_inicio);
-            const diff = Math.floor((new Date() - inicio) / 1000);
-            const h = Math.floor(diff / 3600);
-            const m = Math.floor((diff % 3600) / 60);
-            tiempo.textContent = `Tiempo transcurrido: ${h}h ${m}min`;
+            // 🔥 TIEMPO EN VIVO
+            intervalTiempo = setInterval(() => {
+                const ahora = new Date();
+                const diff = Math.floor((ahora - inicioActivo) / 1000);
+
+                tiempo.textContent = `Tiempo transcurrido: ${formatearSegundos(diff)}`;
+
+                // 🔥 TOTAL HOY EN VIVO
+                document.getElementById('totalHoy').textContent =
+                    formatearSegundos(totalBaseSegundos + diff);
+
+            }, 1000);
+
         } else {
             pill.className = 'status-pill status-idle';
             dot.className = 'status-dot';
@@ -84,15 +128,14 @@ async function cargarEstado() {
             tiempo.textContent = '';
             btnIni.style.display = 'block';
             btnFin.style.display = 'none';
+            inicioActivo = null;
         }
 
-        if (data.ultimo_registro) {
-            if (data.ultimo_registro.tiempo_total) {
-                document.getElementById('totalHoy').innerHTML = data.ultimo_registro.tiempo_total;
-            }
-            if (data.ultimo_registro.hora_inicio) {
-                document.getElementById('ultimoRegistro').textContent = data.ultimo_registro.hora_inicio;
-            }
+        // ÚLTIMO INICIO
+        if (data.ultimo_registro?.hora_inicio) {
+            const f = new Date(data.ultimo_registro.hora_inicio);
+            document.getElementById('ultimoRegistro').textContent =
+                f.toLocaleTimeString('es-ES');
         }
 
     } catch (error) {
@@ -100,86 +143,85 @@ async function cargarEstado() {
     }
 }
 
+// ============================
+// HISTORIAL + TOTAL
+// ============================
 async function cargarHistorial() {
     try {
         const res = await fetch(`${API_URL}/api/trabajador/historial/${usuario.id}`);
         const data = await res.json();
-        mostrarHistorial(data.historial || []);
+
+        const historial = data.historial || [];
+        mostrarHistorial(historial);
+
+        // 🔥 SUMA TOTAL
+        totalBaseSegundos = 0;
+
+        historial.forEach(h => {
+            if (h.duracion_segundos) {
+                totalBaseSegundos += h.duracion_segundos;
+            }
+        });
+
+        document.getElementById('totalHoy').textContent =
+            formatearSegundos(totalBaseSegundos);
+
     } catch (error) {
         console.error('Error cargando historial:', error);
     }
 }
 
+// ============================
+// TABLA
+// ============================
 function mostrarHistorial(historial) {
     const tbody = document.getElementById('historialBody');
-    if (!tbody) return;
     tbody.innerHTML = '';
 
-    const sesEl = document.getElementById('totalSesiones');
-    if (sesEl) sesEl.textContent = historial.length;
+    document.getElementById('totalSesiones').textContent = historial.length;
 
     if (!historial.length) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center td-muted">Sin registros previos</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4">Sin registros</td></tr>';
         return;
     }
 
     historial.forEach(h => {
         const row = tbody.insertRow();
-        row.insertCell(0).textContent = h.fecha;
+
+        const fecha = new Date(h.fecha);
+
+        row.insertCell(0).textContent =
+            fecha.toLocaleDateString('es-ES');
+
         row.insertCell(1).textContent = h.hora_inicio;
         row.insertCell(2).textContent = h.hora_fin || '—';
         row.insertCell(3).textContent = h.tiempo_total || 'En curso';
     });
 }
 
+// ============================
+// ACCIONES
+// ============================
 async function iniciarPicking() {
-    try {
-        const response = await fetch(`${API_URL}/api/trabajador/iniciar`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ usuario_id: usuario.id })
-        });
-        const data = await response.json();
+    await fetch(`${API_URL}/api/trabajador/iniciar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usuario_id: usuario.id })
+    });
 
-        if (response.ok && data.success) {
-            mostrarNotificacion('Picking iniciado correctamente', 'success');
-            await cargarEstado();
-            await cargarHistorial();
-        } else {
-            mostrarNotificacion(data.error || 'Error al iniciar picking', 'error');
-        }
-    } catch (error) {
-        mostrarNotificacion('Error de conexión', 'error');
-    }
+    await cargarHistorial();
+    await cargarEstado();
 }
 
 async function finalizarPicking() {
-    try {
-        const response = await fetch(`${API_URL}/api/trabajador/finalizar`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ usuario_id: usuario.id })
-        });
-        const data = await response.json();
+    await fetch(`${API_URL}/api/trabajador/finalizar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usuario_id: usuario.id })
+    });
 
-        if (response.ok && data.success) {
-            mostrarNotificacion('Picking finalizado correctamente', 'success');
-            await cargarEstado();
-            await cargarHistorial();
-        } else {
-            mostrarNotificacion(data.error || 'Error al finalizar picking', 'error');
-        }
-    } catch (error) {
-        mostrarNotificacion('Error de conexión', 'error');
-    }
-}
-
-function mostrarNotificacion(mensaje, tipo) {
-    const n = document.createElement('div');
-    n.className = `notificacion notificacion-${tipo}`;
-    n.textContent = (tipo === 'success' ? '✓  ' : '✕  ') + mensaje;
-    document.body.appendChild(n);
-    setTimeout(() => n.remove(), 3500);
+    await cargarHistorial();
+    await cargarEstado();
 }
 
 function cerrarSesion() {

@@ -1,89 +1,78 @@
 const API_URL = 'https://picking-system-backend.onrender.com';
 
-// ============================
-// 🔥 HORA PERÚ GLOBAL
-// ============================
-function ahoraPeru() {
-    return new Date(new Date().toLocaleString("en-US", {
-        timeZone: "America/Lima"
-    }));
-}
+// Preset avatar colors for visual variety
+const AVATAR_COLORS = [
+    'linear-gradient(135deg,#C9A84C,#8B6914)',
+    'linear-gradient(135deg,#5a67d8,#3c3489)',
+    'linear-gradient(135deg,#2d6a4f,#085041)',
+    'linear-gradient(135deg,#d85a30,#4a1b0c)',
+    'linear-gradient(135deg,#185fa5,#042c53)',
+    'linear-gradient(135deg,#993556,#4b1528)',
+];
 
-function fechaPeruISO() {
-    const f = ahoraPeru();
-    return `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}-${String(f.getDate()).padStart(2, '0')}`;
-}
+let usuario = null;
 
-// ============================
-// RELOJ ADMIN
-// ============================
+// =============================================
+// RELOJ ADMIN EN FORMATO 12 HORAS
+// =============================================
 function iniciarRelojAdmin() {
     function tick() {
-        const ahora = ahoraPeru();
-
-        let h = ahora.getHours();
-        const m = String(ahora.getMinutes()).padStart(2, '0');
-        const s = String(ahora.getSeconds()).padStart(2, '0');
-        const ampm = h >= 12 ? 'PM' : 'AM';
-
-        h = h % 12 || 12;
-
-        document.getElementById('adminClock').textContent =
-            `${String(h).padStart(2, '0')}:${m}:${s} ${ampm}`;
+        const ahora = new Date();
+        let horas = ahora.getHours();
+        const minutos = String(ahora.getMinutes()).padStart(2, '0');
+        const segundos = String(ahora.getSeconds()).padStart(2, '0');
+        const ampm = horas >= 12 ? 'PM' : 'AM';
+        horas = horas % 12;
+        horas = horas ? horas : 12;
+        const horasStr = String(horas).padStart(2, '0');
+        
+        const relojDiv = document.getElementById('adminClock');
+        if (relojDiv) {
+            relojDiv.textContent = `${horasStr}:${minutos}:${segundos} ${ampm}`;
+        }
     }
-
     tick();
     setInterval(tick, 1000);
 }
 
-// ============================
-// INIT
-// ============================
 document.addEventListener('DOMContentLoaded', async () => {
+    const usuarioData = sessionStorage.getItem('usuario');
+    if (!usuarioData) { window.location.href = 'index.html'; return; }
 
-    const usuario = JSON.parse(sessionStorage.getItem('usuario'));
-
-    if (!usuario) return location.href = 'index.html';
-    if (usuario.rol !== 'admin') return location.href = 'trabajador.html';
+    usuario = JSON.parse(usuarioData);
+    if (usuario.rol !== 'admin') { window.location.href = 'trabajador.html'; return; }
 
     iniciarRelojAdmin();
 
-    document.getElementById('fecha').value = fechaPeruISO();
-
     await cargarTrabajadores();
+
+    // 🔥 CORRECCIÓN: Fecha local en formato YYYY-MM-DD (Perú)
+    const hoy = new Date().toLocaleDateString('en-CA');
+    document.getElementById('fecha').value = hoy;
     await cargarReportes();
 
     setInterval(cargarReportes, 30000);
 });
 
-// ============================
-// TRABAJADORES
-// ============================
 async function cargarTrabajadores() {
     try {
-        const res = await fetch(`${API_URL}/api/admin/trabajadores`);
-        const data = await res.json();
+        const response = await fetch(`${API_URL}/api/admin/trabajadores`);
+        const trabajadores = await response.json();
 
         const select = document.getElementById('trabajador');
-        select.innerHTML = '<option value="">Todos</option>';
-
-        data.forEach(t => {
-            const o = document.createElement('option');
-            o.value = t.id;
-            o.textContent = `${t.nombre} (${t.dni})`;
-            select.appendChild(o);
+        select.innerHTML = '<option value="">Todos los trabajadores</option>';
+        trabajadores.forEach(t => {
+            const option = document.createElement('option');
+            option.value = t.id;
+            option.textContent = `${t.nombre} (${t.dni})`;
+            select.appendChild(option);
         });
-
-    } catch (e) {
-        console.error(e);
+    } catch (error) {
+        console.error('Error al cargar trabajadores:', error);
     }
 }
 
-// ============================
-// REPORTES
-// ============================
 async function cargarReportes() {
-
     const fecha = document.getElementById('fecha').value;
     const trabajadorId = document.getElementById('trabajador').value;
 
@@ -92,60 +81,133 @@ async function cargarReportes() {
     if (trabajadorId) url += `trabajador_id=${trabajadorId}`;
 
     try {
-        const res = await fetch(url);
-        const data = await res.json();
+        const response = await fetch(url);
+        const reportes = await response.json();
 
         const tbody = document.getElementById('reportesBody');
         tbody.innerHTML = '';
 
-        if (!data.length) {
-            tbody.innerHTML = `<tr><td colspan="7">No hay registros</td></tr>`;
-            return;
-        }
+        let totalHoras = 0;
+        const trabajadoresUnicos = new Set();
 
-        data.forEach(r => {
+        if (reportes.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center td-muted">No hay registros para esta fecha</td></tr>';
+        } else {
+            reportes.forEach((r, i) => {
+                const row = tbody.insertRow();
+                const activo = !r.hora_fin;
 
-            const row = tbody.insertRow();
+                const initials = r.trabajador.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+                const color = AVATAR_COLORS[i % AVATAR_COLORS.length];
 
-            row.insertCell(0).textContent = r.trabajador;
-            row.insertCell(1).textContent = r.dni;
+                row.insertCell(0).innerHTML = `
+                    <div class="worker-cell">
+                        <div class="mini-avatar" style="background:${color}; color:var(--ink)">${initials}</div>
+                        ${escapeHtml(r.trabajador)}
+                    </div>`;
 
-            // 🔥 FECHA PERÚ CORRECTA
-            row.insertCell(2).textContent =
-                new Date(r.fecha + 'T00:00:00')
-                .toLocaleDateString('es-PE', { timeZone: 'America/Lima' });
-
-            row.insertCell(3).textContent = r.hora_inicio;
-            row.insertCell(4).textContent = r.hora_fin || '—';
-            row.insertCell(5).textContent = r.tiempo_total || 'En curso';
-
-            row.insertCell(6).innerHTML =
-                !r.hora_fin
+                row.insertCell(1).textContent = r.dni;
+                row.insertCell(2).textContent = r.fecha;
+                row.insertCell(3).textContent = r.hora_inicio;
+                row.insertCell(4).textContent = r.hora_fin || '—';
+                row.insertCell(5).textContent = r.tiempo_total || 'En curso';
+                row.insertCell(6).innerHTML = activo
                     ? '<span class="badge-active">En curso</span>'
                     : '<span class="badge-done">Finalizado</span>';
-        });
 
-    } catch (e) {
-        console.error(e);
+                if (r.duracion_horas) {
+                    totalHoras += r.duracion_horas;
+                    trabajadoresUnicos.add(r.trabajador);
+                }
+            });
+        }
+
+        document.getElementById('totalActivos').textContent = reportes.filter(r => !r.hora_fin).length;
+        document.getElementById('totalHoras').textContent = `${totalHoras.toFixed(1)}h`;
+        document.getElementById('promedioHoras').textContent = trabajadoresUnicos.size
+            ? `${(totalHoras / trabajadoresUnicos.size).toFixed(1)}h` : '0h';
+        document.getElementById('totalRegistros').textContent = reportes.length;
+        document.getElementById('contadorRegistros').textContent = `${reportes.length} registro${reportes.length !== 1 ? 's' : ''}`;
+
+    } catch (error) {
+        console.error('Error al cargar reportes:', error);
+        document.getElementById('reportesBody').innerHTML =
+            '<tr><td colspan="7" class="text-center td-muted">Error al cargar datos</td></tr>';
     }
 }
 
-// ============================
-// EXPORTAR PDF
-// ============================
+// =============================================
+// EXPORTAR A PDF (PROFESIONAL)
+// =============================================
 async function exportarExcel() {
-
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'landscape' });
 
-    const ahora = ahoraPeru();
+    const fecha = document.getElementById('fecha').value || 'Todas';
+    const select = document.getElementById('trabajador');
+    const trabajadorTexto = select.options[select.selectedIndex]?.text || 'Todos';
 
-    const fecha = fechaPeruISO();
-    const hora = ahora.toLocaleTimeString('es-PE', { timeZone: 'America/Lima' });
+    doc.setFontSize(16);
+    doc.text('📦 Reporte de Picking', 14, 22);
+    doc.setFontSize(10);
+    doc.text(`Filtro fecha: ${fecha}`, 14, 32);
+    doc.text(`Trabajador: ${trabajadorTexto}`, 14, 38);
+    doc.text(`Generado: ${new Date().toLocaleString()}`, 14, 44);
 
-    doc.text('📦 Reporte de Picking', 14, 20);
-    doc.text(`Fecha: ${fecha}`, 14, 30);
-    doc.text(`Hora: ${hora}`, 14, 36);
+    const headers = [];
+    document.querySelectorAll('#reportesTabla thead th').forEach(th => {
+        headers.push(th.innerText.trim());
+    });
 
-    doc.save(`reporte_${fecha}.pdf`);
+    const body = [];
+    document.querySelectorAll('#reportesTabla tbody tr').forEach(tr => {
+        const row = [];
+        tr.querySelectorAll('td').forEach(td => {
+            row.push(td.innerText.trim());
+        });
+        if (row.length) body.push(row);
+    });
+
+    doc.autoTable({
+        head: [headers],
+        body: body,
+        startY: 52,
+        theme: 'striped',
+        headStyles: { fillColor: [201, 168, 76], textColor: [13, 14, 18], fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 244, 240] },
+        styles: { fontSize: 9, cellPadding: 3 }
+    });
+
+    doc.save(`reporte_picking_${new Date().toISOString().split('T')[0]}.pdf`);
+    mostrarNotificacion('PDF generado correctamente', 'success');
+}
+
+function mostrarNotificacion(mensaje, tipo) {
+    const n = document.createElement('div');
+    n.className = `notificacion notificacion-${tipo}`;
+    n.textContent = (tipo === 'success' ? '✓ ' : '✕ ') + mensaje;
+    n.style.cssText = `
+        position:fixed; top:24px; right:24px;
+        padding:14px 20px;
+        background:${tipo === 'success' ? 'var(--green)' : 'var(--red)'};
+        color:#fff; border-radius:8px; font-size:14px; font-weight:500;
+        z-index:1000; animation:slideIn 0.3s ease;
+        box-shadow:0 4px 16px rgba(0,0,0,0.12);
+        font-family:var(--font-body);
+    `;
+    document.body.appendChild(n);
+    setTimeout(() => n.remove(), 3500);
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function cerrarSesion() {
+    sessionStorage.clear();
+    window.location.href = 'index.html';
 }
